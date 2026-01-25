@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sequence Master</title>
+    <script src="sdk/mesa-sdk.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+            padding: 1rem;
+        }
+
+        h1 {
+            font-size: clamp(1.3rem, 4vw, 2rem);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .game-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-display {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            margin-bottom: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(6px, 1.5vw, 10px);
+            padding: clamp(6px, 1.5vw, 10px);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-btn {
+            width: clamp(70px, 20vmin, 120px);
+            height: clamp(70px, 20vmin, 120px);
+            border: none;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            position: relative;
+            outline: none;
+        }
+
+        .color-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .color-btn::after {
+            content: attr(data-key);
+            position: absolute;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Position key hints at inner corners (close to center) */
+        .btn-green::after {
+            bottom: 8px;
+            right: 8px;
+        }
+        .btn-red::after {
+            bottom: 8px;
+            left: 8px;
+        }
+        .btn-yellow::after {
+            top: 8px;
+            right: 8px;
+        }
+        .btn-blue::after {
+            top: 8px;
+            left: 8px;
+        }
+
+        /* Green - Top Left */
+        .btn-green {
+            background: #1b5e20;
+            border-radius: 100% 0 0 0;
+            box-shadow: inset -4px -4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-green:hover:not(:disabled), .btn-green.active {
+            background: #4caf50;
+            box-shadow: 0 0 30px #4caf50, inset -2px -2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Red - Top Right */
+        .btn-red {
+            background: #b71c1c;
+            border-radius: 0 100% 0 0;
+            box-shadow: inset 4px -4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-red:hover:not(:disabled), .btn-red.active {
+            background: #f44336;
+            box-shadow: 0 0 30px #f44336, inset 2px -2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Yellow - Bottom Left */
+        .btn-yellow {
+            background: #f57f17;
+            border-radius: 0 0 0 100%;
+            box-shadow: inset -4px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-yellow:hover:not(:disabled), .btn-yellow.active {
+            background: #ffeb3b;
+            box-shadow: 0 0 30px #ffeb3b, inset -2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Blue - Bottom Right */
+        .btn-blue {
+            background: #0d47a1;
+            border-radius: 0 0 100% 0;
+            box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-blue:hover:not(:disabled), .btn-blue.active {
+            background: #2196f3;
+            box-shadow: 0 0 30px #2196f3, inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls {
+            margin-top: 0.75rem;
+        }
+
+        .start-btn {
+            padding: 10px 30px;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .instructions {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 220px;
+            line-height: 1.4;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .instructions h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #ffd700;
+        }
+
+        .instructions p {
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions .example {
+            font-size: 0.8rem;
+            opacity: 0.85;
+            font-style: italic;
+        }
+
+        .instructions .example span {
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        .keyboard-hint {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .keyboard-hint code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        /* Game Over Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 100;
+        }
+
+        .overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .overlay h2 {
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            color: #f44336;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 30px rgba(244, 67, 54, 0.5);
+        }
+
+        .overlay .final-score {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            margin-bottom: 0.5rem;
+        }
+
+        .overlay .final-score span {
+            color: #4caf50;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .play-again-btn {
+            padding: 12px 40px;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .play-again-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        /* Status indicator */
+        .status {
+            margin-top: 0.5rem;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            min-height: 1.3em;
+            color: #ffd700;
+        }
+
+        /* Desktop layout - side by side */
+        @media (min-width: 600px) {
+            .main-container {
+                flex-direction: row;
+                align-items: center;
+                gap: 2rem;
+            }
+
+            .instructions {
+                max-width: 260px;
+                text-align: left;
+            }
+        }
+
+        /* Larger desktop */
+        @media (min-width: 900px) {
+            .main-container {
+                gap: 3rem;
+            }
+
+            .instructions {
+                max-width: 300px;
+            }
+
+            .color-btn {
+                width: 130px;
+                height: 130px;
+            }
+        }
+
+        /* Small screens - hide keyboard hints and instructions */
+        @media (max-width: 600px) {
+            .color-btn::after {
+                display: none;
+            }
+
+            .instructions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Sequence Master</h1>
+
+    <div class="main-container">
+        <div class="game-section">
+            <div class="score-display">Score: <span id="score">0</span></div>
+
+            <div class="game-board">
+                <button class="color-btn btn-green" data-color="green" data-key="Q" disabled></button>
+                <button class="color-btn btn-red" data-color="red" data-key="W" disabled></button>
+                <button class="color-btn btn-yellow" data-color="yellow" data-key="A" disabled></button>
+                <button class="color-btn btn-blue" data-color="blue" data-key="S" disabled></button>
+            </div>
+
+            <div class="status" id="status"></div>
+
+            <div class="controls">
+                <button class="start-btn" id="startBtn">Start Game</button>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <p>Each round, a new color lights up. Repeat the <strong>entire sequence</strong> from the beginning.</p>
+            <p class="example"><span>Example:</span> Round 3 shows Blue. You must press Green (round 1), Red (round 2), and Blue (this round).</p>
+            <div class="keyboard-hint">
+                <code>Q</code> <code>W</code> <code>A</code> <code>S</code> for colors<br>
+                <code>Space</code> to start
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="gameOverlay">
+        <h2>Game Over!</h2>
+        <p class="final-score">Your score: <span id="finalScore">0</span></p>
+        <button class="play-again-btn" id="playAgainBtn">Play Again</button>
+    </div>
+
+    <script>
+        // Game constants
+        const COLORS = ['green', 'red', 'yellow', 'blue'];
+        const FREQUENCIES = {
+            green: 415,   // G#4
+            red: 310,     // D#4
+            yellow: 252,  // B3
+            blue: 209     // G#3
+        };
+        const KEY_MAP = {
+            'q': 'green',
+            'w': 'red',
+            'a': 'yellow',
+            's': 'blue'
+        };
+        const TONE_DURATION = 300;
+        const LIGHT_DURATION = 400;
+        const PAUSE_BEFORE_INPUT = 500;
+
+        // Game state
+        let sequence = [];
+        let playerIndex = 0;
+        let gameState = 'IDLE'; // IDLE, SHOWING, INPUT, GAMEOVER
+        let audioContext = null;
+        let mesaInitialized = false;
+
+        // DOM elements
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const startBtn = document.getElementById('startBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const gameOverlay = document.getElementById('gameOverlay');
+        const statusEl = document.getElementById('status');
+
+        // Initialize audio context on first user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        // Initialize Mesa SDK
+        async function initMesa() {
+            if (mesaInitialized) return;
+            try {
+                if (window.Mesa) {
+                    await window.Mesa.init();
+                    mesaInitialized = true;
+                    window.Mesa.log.info('Sequence Master initialized');
+                }
+            } catch (err) {
+                console.warn('Mesa SDK init failed:', err);
+            }
+        }
+
+        // Submit score to leaderboard
+        async function submitScore(score) {
+            if (!mesaInitialized || !window.Mesa) {
+                return;
+            }
+
+            try {
+                const user = window.Mesa.user.get();
+                const playerName = user ? user.username : 'Anonymous';
+
+                await window.Mesa.leaderboard.submit({
+                    key: 'default',
+                    playerName: playerName,
+                    displayValue: score + ' colors',
+                    sortValue: score
+                });
+            } catch (err) {
+                console.warn('Score submission failed:', err);
+            }
+        }
+
+        // Play a tone for a specific color
+        function playTone(color, duration = TONE_DURATION) {
+            if (!audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Triangle wave for warmer, softer sound
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(FREQUENCIES[color], audioContext.currentTime);
+
+            // Smooth attack and release for pleasant sound
+            const now = audioContext.currentTime;
+            const durationSec = duration / 1000;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.4, now + 0.02);
+            gainNode.gain.setValueAtTime(0.4, now + durationSec * 0.7);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+            oscillator.start(now);
+            oscillator.stop(now + durationSec);
+        }
+
+        // Play error sound - gentle descending tone
+        function playErrorSound() {
+            if (!audioContext) return;
+
+            const now = audioContext.currentTime;
+
+            // First tone - starting note
+            const osc1 = audioContext.createOscillator();
+            const gain1 = audioContext.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(330, now);
+            osc1.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+            gain1.gain.setValueAtTime(0, now);
+            gain1.gain.linearRampToValueAtTime(0.25, now + 0.02);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc1.start(now);
+            osc1.stop(now + 0.3);
+
+            // Second tone - lower, slightly delayed
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(220, now + 0.15);
+            osc2.frequency.exponentialRampToValueAtTime(165, now + 0.4);
+            gain2.gain.setValueAtTime(0, now + 0.15);
+            gain2.gain.linearRampToValueAtTime(0.2, now + 0.17);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+            osc2.start(now + 0.15);
+            osc2.stop(now + 0.5);
+        }
+
+        // Light up a button
+        function lightUpButton(color, duration = LIGHT_DURATION) {
+            const btn = document.querySelector(`[data-color="${color}"]`);
+            btn.classList.add('active');
+            playTone(color, duration);
+
+            setTimeout(() => {
+                btn.classList.remove('active');
+            }, duration);
+        }
+
+        // Flash button for player input (shorter)
+        function flashButton(color) {
+            lightUpButton(color, 200);
+        }
+
+        // Update score display
+        function updateScore() {
+            const score = sequence.length > 0 ? sequence.length - 1 : 0;
+            scoreDisplay.textContent = score;
+        }
+
+        // Set status message
+        function setStatus(message) {
+            statusEl.textContent = message;
+        }
+
+        // Enable/disable color buttons
+        function setButtonsEnabled(enabled) {
+            colorButtons.forEach(btn => {
+                btn.disabled = !enabled;
+            });
+        }
+
+        // Start a new game
+        function startGame() {
+            initAudio();
+            sequence = [];
+            playerIndex = 0;
+            gameState = 'IDLE';
+            gameOverlay.classList.remove('visible');
+            startBtn.disabled = true;
+            updateScore();
+
+            // Add first color and show it
+            addNewColor();
+        }
+
+        // Add a new random color to the sequence
+        function addNewColor() {
+            const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            sequence.push(randomColor);
+            updateScore();
+            showNewColor();
+        }
+
+        // Show only the newest color in the sequence
+        function showNewColor() {
+            gameState = 'SHOWING';
+            setButtonsEnabled(false);
+            setStatus('Watch...');
+
+            const newColor = sequence[sequence.length - 1];
+
+            setTimeout(() => {
+                lightUpButton(newColor, LIGHT_DURATION);
+
+                setTimeout(() => {
+                    enablePlayerInput();
+                }, LIGHT_DURATION + PAUSE_BEFORE_INPUT);
+            }, 300);
+        }
+
+        // Enable player input
+        function enablePlayerInput() {
+            gameState = 'INPUT';
+            playerIndex = 0;
+            setButtonsEnabled(true);
+            setStatus('Your turn! (' + playerIndex + '/' + sequence.length + ')');
+        }
+
+        // Handle player input
+        function handleInput(color) {
+            if (gameState !== 'INPUT') return;
+
+            flashButton(color);
+
+            if (color === sequence[playerIndex]) {
+                // Correct!
+                playerIndex++;
+
+                if (playerIndex >= sequence.length) {
+                    // Completed the sequence
+                    setButtonsEnabled(false);
+                    setStatus('Correct!');
+
+                    setTimeout(() => {
+                        addNewColor();
+                    }, 800);
+                } else {
+                    // More to go
+                    setStatus('Your turn! (' + playerIndex + '/' + sequence.length + ')');
+                }
+            } else {
+                // Wrong!
+                gameOver();
+            }
+        }
+
+        // Game over
+        async function gameOver() {
+            gameState = 'GAMEOVER';
+            setButtonsEnabled(false);
+            playErrorSound();
+            setStatus('');
+
+            const finalScore = sequence.length > 0 ? sequence.length - 1 : 0;
+            finalScoreDisplay.textContent = finalScore;
+
+            setTimeout(async () => {
+                gameOverlay.classList.add('visible');
+                startBtn.disabled = false;
+
+                // Submit score to leaderboard (viewable on portal)
+                if (finalScore > 0) {
+                    await submitScore(finalScore);
+                }
+            }, 500);
+        }
+
+        // Event listeners for color buttons (mouse/touch)
+        colorButtons.forEach(btn => {
+            // Mouse click
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const color = btn.dataset.color;
+                handleInput(color);
+            });
+
+            // Touch events
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'INPUT' && !btn.disabled) {
+                    btn.classList.add('active');
+                }
+            });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                btn.classList.remove('active');
+                const color = btn.dataset.color;
+                handleInput(color);
+            });
+        });
+
+        // Keyboard input
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            if (key === ' ' || key === 'enter') {
+                e.preventDefault();
+                if (gameState === 'IDLE' || gameState === 'GAMEOVER') {
+                    startGame();
+                }
+                return;
+            }
+
+            if (KEY_MAP[key] && gameState === 'INPUT') {
+                e.preventDefault();
+                handleInput(KEY_MAP[key]);
+            }
+        });
+
+        // Start button
+        startBtn.addEventListener('click', () => {
+            if (gameState === 'IDLE' || gameState === 'GAMEOVER') {
+                startGame();
+            }
+        });
+
+        // Play again button
+        playAgainBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        // Prevent zoom on double-tap for mobile
+        document.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Initialize
+        setStatus('');
+
+        // Initialize Mesa SDK on page load
+        initMesa();
+    </script>
+</body>
+</html>
