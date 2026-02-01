@@ -420,11 +420,11 @@
 </head>
 <body>
     <button class="help-btn" id="helpBtn">?</button>
-    <h1>Sequence Master</h1>
+    <h1 data-i18n="title">Sequence Master</h1>
 
     <div class="main-container">
         <div class="game-section">
-            <div class="score-display">Score: <span id="score">0</span></div>
+            <div class="score-display"><span data-i18n="score">Score</span>: <span id="score">0</span></div>
 
             <div class="game-board">
                 <button class="color-btn btn-green" data-color="green" data-key="Q" disabled></button>
@@ -436,14 +436,14 @@
             <div class="status" id="status"></div>
 
             <div class="controls">
-                <button class="start-btn" id="startBtn">Start Game</button>
+                <button class="start-btn" id="startBtn" data-i18n="startGame">Start Game</button>
             </div>
         </div>
 
         <div class="instructions">
-            <h3>How to Play</h3>
-            <p>Each round, a new color lights up. Repeat the <strong>entire sequence</strong> from the beginning.</p>
-            <p class="example"><span>Example:</span> Round 3 shows Blue. You must press Green (round 1), Red (round 2), and Blue (this round).</p>
+            <h3 data-i18n="howToPlay">How to Play</h3>
+            <p data-i18n="instruction">Each round, a new color lights up. Repeat the <strong>entire sequence</strong> from the beginning.</p>
+            <p class="example" data-i18n="example"><span>Example:</span> Round 3 shows Blue. You must press Green (round 1), Red (round 2), and Blue (this round).</p>
             <div class="keyboard-hint">
                 <code>Q</code> <code>W</code> <code>A</code> <code>S</code> for colors<br>
                 <code>Space</code> to start
@@ -452,22 +452,130 @@
     </div>
 
     <div class="overlay" id="gameOverlay">
-        <h2>Game Over!</h2>
-        <p class="final-score">Your score: <span id="finalScore">0</span></p>
-        <button class="play-again-btn" id="playAgainBtn">Play Again</button>
+        <h2 data-i18n="gameOver">Game Over!</h2>
+        <p class="final-score"><span data-i18n="yourScore">Your score</span>: <span id="finalScore">0</span></p>
+        <button class="play-again-btn" id="playAgainBtn" data-i18n="playAgain">Play Again</button>
     </div>
 
     <div class="help-overlay" id="helpOverlay">
         <div class="help-content">
-            <h2>How to Play</h2>
-            <p>Each round, a new color lights up.</p>
-            <p>Repeat the <strong>entire sequence</strong> from the beginning by tapping the colors in order.</p>
-            <p>The sequence grows longer each round. How far can you go?</p>
-            <button class="help-close-btn" id="helpCloseBtn">Got it!</button>
+            <h2 data-i18n="howToPlay">How to Play</h2>
+            <p data-i18n="instruction">Each round, a new color lights up. Repeat the <strong>entire sequence</strong> from the beginning.</p>
+            <p class="example" data-i18n="example"><span>Example:</span> Round 3 shows Blue. You must press Green (round 1), Red (round 2), and Blue (this round).</p>
+            <button class="help-close-btn" id="helpCloseBtn" data-i18n="gotIt">Got it!</button>
         </div>
     </div>
 
     <script>
+        // Translations
+        const TRANSLATIONS = {
+            en: {
+                title: 'Sequence Master',
+                score: 'Score',
+                howToPlay: 'How to Play',
+                instruction: 'Each round, a new color lights up. Repeat the <strong>entire sequence</strong> from the beginning.',
+                example: '<span>Example:</span> Round 3 shows Blue. You must press Green (round 1), Red (round 2), and Blue (this round).',
+                startGame: 'Start Game',
+                gameOver: 'Game Over!',
+                yourScore: 'Your score',
+                playAgain: 'Play Again',
+                gotIt: 'Got it!',
+                watch: 'Watch...',
+                yourTurn: 'Your turn!',
+                correct: 'Correct!'
+            },
+            cs: {
+                title: 'Sequence Master',
+                score: 'Skóre',
+                howToPlay: 'Jak hrát',
+                instruction: 'Každé kolo se rozsvítí nová barva. Zopakuj <strong>celou sekvenci</strong> od začátku.',
+                example: '<span>Příklad:</span> Kolo 3 ukáže modrou. Musíš zmáčknout zelenou (kolo 1), červenou (kolo 2) a modrou (toto kolo).',
+                startGame: 'Spustit hru',
+                gameOver: 'Konec hry!',
+                yourScore: 'Tvé skóre',
+                playAgain: 'Hrát znovu',
+                gotIt: 'Rozumím!',
+                watch: 'Sleduj...',
+                yourTurn: 'Tvůj tah!',
+                correct: 'Správně!'
+            },
+            de: {
+                title: 'Sequence Master',
+                score: 'Punkte',
+                howToPlay: 'Spielanleitung',
+                instruction: 'Jede Runde leuchtet eine neue Farbe auf. Wiederhole die <strong>gesamte Sequenz</strong> von Anfang an.',
+                example: '<span>Beispiel:</span> Runde 3 zeigt Blau. Du musst Grün (Runde 1), Rot (Runde 2) und Blau (diese Runde) drücken.',
+                startGame: 'Spiel starten',
+                gameOver: 'Spiel vorbei!',
+                yourScore: 'Deine Punkte',
+                playAgain: 'Nochmal spielen',
+                gotIt: 'Verstanden!',
+                watch: 'Schau zu...',
+                yourTurn: 'Du bist dran!',
+                correct: 'Richtig!'
+            },
+            es: {
+                title: 'Sequence Master',
+                score: 'Puntos',
+                howToPlay: 'Cómo jugar',
+                instruction: 'Cada ronda, un nuevo color se ilumina. Repite la <strong>secuencia completa</strong> desde el principio.',
+                example: '<span>Ejemplo:</span> La ronda 3 muestra Azul. Debes presionar Verde (ronda 1), Rojo (ronda 2) y Azul (esta ronda).',
+                startGame: 'Iniciar juego',
+                gameOver: '¡Fin del juego!',
+                yourScore: 'Tu puntuación',
+                playAgain: 'Jugar de nuevo',
+                gotIt: '¡Entendido!',
+                watch: 'Mira...',
+                yourTurn: '¡Tu turno!',
+                correct: '¡Correcto!'
+            },
+            it: {
+                title: 'Sequence Master',
+                score: 'Punteggio',
+                howToPlay: 'Come giocare',
+                instruction: 'Ogni round, un nuovo colore si illumina. Ripeti l\'<strong>intera sequenza</strong> dall\'inizio.',
+                example: '<span>Esempio:</span> Il round 3 mostra Blu. Devi premere Verde (round 1), Rosso (round 2) e Blu (questo round).',
+                startGame: 'Inizia gioco',
+                gameOver: 'Fine partita!',
+                yourScore: 'Il tuo punteggio',
+                playAgain: 'Gioca ancora',
+                gotIt: 'Capito!',
+                watch: 'Guarda...',
+                yourTurn: 'Tocca a te!',
+                correct: 'Corretto!'
+            }
+        };
+
+        let currentLang = 'en';
+
+        // Get preferred language from Mesa SDK or browser
+        function getLanguage() {
+            if (window.Mesa && window.Mesa.user) {
+                const langs = window.Mesa.user.getLanguages();
+                for (const lang of langs) {
+                    if (TRANSLATIONS[lang]) return lang;
+                }
+            }
+            // Fallback to browser language
+            const browserLang = navigator.language.split('-')[0];
+            if (TRANSLATIONS[browserLang]) return browserLang;
+            return 'en';
+        }
+
+        // Apply translations to all UI elements
+        function applyTranslations() {
+            currentLang = getLanguage();
+            const t = TRANSLATIONS[currentLang];
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.innerHTML = t[key];
+                }
+            });
+        }
+
         // Game constants
         const COLORS = ['green', 'red', 'yellow', 'blue'];
         const FREQUENCIES = {
@@ -524,6 +632,10 @@
                     await window.Mesa.init();
                     mesaInitialized = true;
                     window.Mesa.log.info('Sequence Master initialized');
+                    // Report supported languages
+                    window.Mesa.game.reportLanguages(['en', 'cs', 'de', 'es', 'it']);
+                    // Apply translations based on user preference
+                    applyTranslations();
                 }
             } catch (err) {
                 console.warn('Mesa SDK init failed:', err);
@@ -677,7 +789,7 @@
         function showNewColor() {
             gameState = 'SHOWING';
             setButtonsEnabled(false);
-            setStatus('Watch...');
+            setStatus(TRANSLATIONS[currentLang].watch);
 
             const newColor = sequence[sequence.length - 1];
 
@@ -695,7 +807,7 @@
             gameState = 'INPUT';
             playerIndex = 0;
             setButtonsEnabled(true);
-            setStatus('Your turn! (' + playerIndex + '/' + sequence.length + ')');
+            setStatus(TRANSLATIONS[currentLang].yourTurn + ' (' + playerIndex + '/' + sequence.length + ')');
         }
 
         // Handle player input
@@ -711,14 +823,14 @@
                 if (playerIndex >= sequence.length) {
                     // Completed the sequence
                     setButtonsEnabled(false);
-                    setStatus('Correct!');
+                    setStatus(TRANSLATIONS[currentLang].correct);
 
                     setTimeout(() => {
                         addNewColor();
                     }, 800);
                 } else {
                     // More to go
-                    setStatus('Your turn! (' + playerIndex + '/' + sequence.length + ')');
+                    setStatus(TRANSLATIONS[currentLang].yourTurn + ' (' + playerIndex + '/' + sequence.length + ')');
                 }
             } else {
                 // Wrong!
@@ -836,7 +948,10 @@
         // Initialize
         setStatus('');
 
-        // Initialize Mesa SDK on page load
+        // Apply translations (uses browser language as fallback)
+        applyTranslations();
+
+        // Initialize Mesa SDK on page load (will re-apply translations with user preference)
         initMesa();
     </script>
 </body>
