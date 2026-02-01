@@ -410,7 +410,8 @@
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (audioContext.state === 'suspended') {
+            // Only resume if not muted by Mesa SDK
+            if (audioContext.state === 'suspended' && (!window.Mesa || !window.Mesa.audio.isMuted())) {
                 audioContext.resume();
             }
         }
