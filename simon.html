@@ -330,9 +330,96 @@
                 display: none;
             }
         }
+
+        /* Help button - mobile only */
+        .help-btn {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .help-btn {
+                display: flex;
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                width: 36px;
+                height: 36px;
+                background: rgba(255, 255, 255, 0.15);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                color: #fff;
+                font-size: 1.2rem;
+                font-weight: bold;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 50;
+            }
+
+            .help-btn:active {
+                background: rgba(255, 255, 255, 0.25);
+            }
+        }
+
+        /* Help overlay */
+        .help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 200;
+            padding: 1.5rem;
+        }
+
+        .help-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .help-content {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .help-content h2 {
+            font-size: 1.5rem;
+            color: #ffd700;
+            margin-bottom: 1rem;
+        }
+
+        .help-content p {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .help-close-btn {
+            margin-top: 1.5rem;
+            padding: 12px 40px;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
+    <button class="help-btn" id="helpBtn">?</button>
     <h1>Sequence Master</h1>
 
     <div class="main-container">
@@ -370,6 +457,16 @@
         <button class="play-again-btn" id="playAgainBtn">Play Again</button>
     </div>
 
+    <div class="help-overlay" id="helpOverlay">
+        <div class="help-content">
+            <h2>How to Play</h2>
+            <p>Each round, a new color lights up.</p>
+            <p>Repeat the <strong>entire sequence</strong> from the beginning by tapping the colors in order.</p>
+            <p>The sequence grows longer each round. How far can you go?</p>
+            <button class="help-close-btn" id="helpCloseBtn">Got it!</button>
+        </div>
+    </div>
+
     <script>
         // Game constants
         const COLORS = ['green', 'red', 'yellow', 'blue'];
@@ -404,6 +501,9 @@
         const finalScoreDisplay = document.getElementById('finalScore');
         const gameOverlay = document.getElementById('gameOverlay');
         const statusEl = document.getElementById('status');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpOverlay = document.getElementById('helpOverlay');
+        const helpCloseBtn = document.getElementById('helpCloseBtn');
 
         // Initialize audio context on first user interaction
         function initAudio() {
@@ -716,6 +816,22 @@
         document.querySelector('.game-board').addEventListener('touchend', (e) => {
             e.preventDefault();
         }, { passive: false });
+
+        // Help button (mobile)
+        helpBtn.addEventListener('click', () => {
+            helpOverlay.classList.add('visible');
+        });
+        helpBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            helpOverlay.classList.add('visible');
+        });
+        helpCloseBtn.addEventListener('click', () => {
+            helpOverlay.classList.remove('visible');
+        });
+        helpCloseBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            helpOverlay.classList.remove('visible');
+        });
 
         // Initialize
         setStatus('');
