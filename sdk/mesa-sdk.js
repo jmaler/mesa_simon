@@ -1,5 +1,6 @@
 (function (window) {
-  const MESA_VERSION = '1.1.0';
+  const MESA_VERSION = '1.3.0';
+  console.log('[Mesa SDK] Loading version', MESA_VERSION);
   const REQUEST_TIMEOUT = 5000;
 
   // Error Codes
@@ -61,6 +62,71 @@
 
   // Local leaderboard storage for local mode
   let localLeaderboards = {};
+
+  // Audio mute state
+  let isMuted = false;
+  let trackedAudioContexts = [];
+  let trackedAudioElements = [];
+
+  // Monkey-patch AudioContext to track and control Web Audio API
+  (function patchAudioContext() {
+    const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!OriginalAudioContext) return;
+
+    function PatchedAudioContext(...args) {
+      const ctx = new OriginalAudioContext(...args);
+      trackedAudioContexts.push(ctx);
+      console.log('[Mesa SDK] AudioContext created and tracked, total:', trackedAudioContexts.length, 'state:', ctx.state);
+
+      // Auto-suspend if currently muted
+      if (isMuted && ctx.state === 'running') {
+        console.log('[Mesa SDK] Auto-suspending new AudioContext (muted)');
+        ctx.suspend().catch(() => {});
+      }
+
+      return ctx;
+    }
+
+    // Copy prototype for instanceof checks
+    PatchedAudioContext.prototype = OriginalAudioContext.prototype;
+
+    // Copy static properties
+    Object.keys(OriginalAudioContext).forEach(key => {
+      try {
+        PatchedAudioContext[key] = OriginalAudioContext[key];
+      } catch (e) {}
+    });
+
+    window.AudioContext = PatchedAudioContext;
+    if (window.webkitAudioContext) {
+      window.webkitAudioContext = PatchedAudioContext;
+    }
+  })();
+
+  // Monkey-patch Audio constructor to track HTML5 Audio elements
+  (function patchAudio() {
+    const OriginalAudio = window.Audio;
+    if (!OriginalAudio) return;
+
+    function PatchedAudio(src) {
+      const audio = new OriginalAudio(src);
+      trackedAudioElements.push(audio);
+      console.log('[Mesa SDK] Audio element created and tracked, total:', trackedAudioElements.length);
+
+      // Auto-mute if currently muted
+      if (isMuted) {
+        console.log('[Mesa SDK] Auto-muting new Audio element (muted)');
+        audio.muted = true;
+      }
+
+      return audio;
+    }
+
+    // Preserve prototype chain for instanceof checks
+    PatchedAudio.prototype = OriginalAudio.prototype;
+
+    window.Audio = PatchedAudio;
+  })();
 
   // Helper to generate IDs
   function generateId() {
@@ -343,6 +409,11 @@
   function receiveMessage(event) {
     const data = event.data;
     if (!data || typeof data !== 'object') return;
+
+    // Log all Mesa-related messages for debugging
+    if (data.type && data.type.startsWith('mesa:')) {
+      console.log('[Mesa SDK] Message received:', data.type, data);
+    }
     
     // Filter out messages not from Mesa Portal (unless local simulation)
     // In a real implementation, we would check event.origin against an allowlist
@@ -367,6 +438,52 @@
         code: data.code,
         message: data.message
       });
+      return;
+    }
+
+    // Handle mute command from portal
+    if (data.type === 'mesa:audio:mute') {
+      isMuted = !!data.muted;
+      console.log('[Mesa SDK] Mute command received:', { muted: isMuted, trackedContexts: trackedAudioContexts.length, trackedAudioElements: trackedAudioElements.length });
+      emit('mute', { muted: isMuted });
+
+      // Suspend/resume all tracked AudioContexts
+      trackedAudioContexts = trackedAudioContexts.filter(ctx => ctx.state !== 'closed');
+      console.log('[Mesa SDK] Processing AudioContexts:', trackedAudioContexts.map(ctx => ({ state: ctx.state })));
+      trackedAudioContexts.forEach(ctx => {
+        try {
+          if (isMuted && ctx.state === 'running') {
+            console.log('[Mesa SDK] Suspending AudioContext');
+            ctx.suspend();
+          } else if (!isMuted && ctx.state === 'suspended') {
+            console.log('[Mesa SDK] Resuming AudioContext');
+            ctx.resume();
+          }
+        } catch (e) {
+          console.error('[Mesa SDK] AudioContext suspend/resume error:', e);
+        }
+      });
+
+      // Mute/unmute all tracked Audio elements (created via new Audio())
+      console.log('[Mesa SDK] Processing tracked Audio elements:', trackedAudioElements.length);
+      trackedAudioElements.forEach(audio => {
+        try {
+          audio.muted = isMuted;
+        } catch (e) {
+          console.error('[Mesa SDK] Audio element mute error:', e);
+        }
+      });
+
+      // Auto-mute all audio/video elements in DOM if game doesn't handle it
+      try {
+        const mediaElements = document.querySelectorAll('audio, video');
+        console.log('[Mesa SDK] Muting DOM media elements:', mediaElements.length);
+        mediaElements.forEach(el => {
+          el.muted = isMuted;
+        });
+      } catch (e) {
+        console.error('[Mesa SDK] Media element mute error:', e);
+      }
       return;
     }
 
@@ -643,6 +760,24 @@
       },
       loadingEnd: function () {
         Transport.send('mesa:game:event', { event: 'loadingEnd' });
+      },
+      /**
+       * Report the languages supported by this game.
+       * Used by portal to prefill language metadata during import or editing.
+       * @param {string[]} languages - Array of language codes (e.g., ['en', 'de', 'cs'])
+       */
+      reportLanguages: function (languages) {
+        if (!Array.isArray(languages)) {
+          console.warn('Mesa SDK: reportLanguages expects an array of language codes');
+          return;
+        }
+        // Validate language codes against known map
+        const validCodes = Object.keys(langCodeMap);
+        const validLanguages = languages.filter(lang => validCodes.includes(lang));
+        if (validLanguages.length !== languages.length) {
+          console.warn('Mesa SDK: Some language codes were invalid and filtered out');
+        }
+        Transport.send('mesa:game:languages', { languages: validLanguages });
       }
     },
 
@@ -667,6 +802,17 @@
        */
       error: function (...args) {
         console.error('%c Mesa ', 'background: #ef4444; color: white; border-radius: 3px; font-weight: bold;', ...args);
+      }
+    },
+
+    audio: {
+      /**
+       * Check if the portal has muted audio.
+       * Games should respect this and mute their audio when true.
+       * @returns {boolean} - true if muted
+       */
+      isMuted: function () {
+        return isMuted;
       }
     }
   };

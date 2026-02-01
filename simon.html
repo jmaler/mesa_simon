@@ -690,14 +690,24 @@
                 startGame();
             }
         });
+        startBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (gameState === 'IDLE' || gameState === 'GAMEOVER') {
+                startGame();
+            }
+        });
 
         // Play again button
         playAgainBtn.addEventListener('click', () => {
             startGame();
         });
+        playAgainBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startGame();
+        });
 
-        // Prevent zoom on double-tap for mobile
-        document.addEventListener('touchend', (e) => {
+        // Prevent zoom on double-tap for mobile (only on game board)
+        document.querySelector('.game-board').addEventListener('touchend', (e) => {
             e.preventDefault();
         }, { passive: false });
 
