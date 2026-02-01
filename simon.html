@@ -454,6 +454,8 @@
         // Play a tone for a specific color
         function playTone(color, duration = TONE_DURATION) {
             if (!audioContext) return;
+            // Respect Mesa SDK mute state
+            if (window.Mesa && window.Mesa.audio.isMuted()) return;
 
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -480,6 +482,8 @@
         // Play error sound - gentle descending tone
         function playErrorSound() {
             if (!audioContext) return;
+            // Respect Mesa SDK mute state
+            if (window.Mesa && window.Mesa.audio.isMuted()) return;
 
             const now = audioContext.currentTime;
 
@@ -516,16 +520,17 @@
         function lightUpButton(color, duration = LIGHT_DURATION) {
             const btn = document.querySelector(`[data-color="${color}"]`);
             btn.classList.add('active');
-            playTone(color, duration);
+            // Always use same tone duration for consistent sound
+            playTone(color, TONE_DURATION);
 
             setTimeout(() => {
                 btn.classList.remove('active');
             }, duration);
         }
 
-        // Flash button for player input (shorter)
+        // Flash button for player input (shorter visual, same tone)
         function flashButton(color) {
-            lightUpButton(color, 200);
+            lightUpButton(color, 250);
         }
 
         // Update score display
